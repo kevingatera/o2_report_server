@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug executable 'o2_report_generator'",
+      "cargo": {
+        "args": ["build", "--bin=o2_report_generator", "--package=o2_report_generator"],
+        "filter": {
+          "name": "o2_report_generator",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+  ]
+} 
