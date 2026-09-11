@@ -33,7 +33,7 @@ steps:
       targetType: inline
       script: |
         set -euo pipefail
-        image="acrnonprodinternal.azurecr.io/automation/report-server:$(Build.SourceVersion)"
+        image="acrnonprodinternal.azurecr.io/automation/report-server:2026.09.11.login-pdf.2123a2f"
         trap 'buildah logout acrnonprodinternal.azurecr.io >/dev/null 2>&1 || true' EXIT
 
         buildah login \
