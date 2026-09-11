@@ -14,5 +14,4 @@ RUN apt-get update \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /out/report-generator /report-generator
-RUN ["/report-generator", "init-dir", "-p", "/data/"]
 CMD ["/report-generator"]

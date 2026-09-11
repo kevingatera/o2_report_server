@@ -4,13 +4,6 @@ trigger:
 pool:
   name: 'OnPrem_Self_Hosted_Agent_Pool_Linux_AutomationTeam'
 
-resources:
-  repositories:
-    - repository: templates-repo
-      type: git
-      ref: main
-      name: Automation/k8s_templates
-
 steps:
   - task: AzureKeyVault@2
     displayName: Get Secrets from Azure Key Vault
@@ -20,11 +13,18 @@ steps:
       SecretsFilter: 'ACRNonProdInternalPushUsername, ACRNonProdInternalPushPassword'
       RunAsPreJob: false
 
-  - template: templates/dau-container-registry.yml@templates-repo
-    parameters:
-      username: $(ACRNonProdInternalPushUsername)
-      password: $(ACRNonProdInternalPushPassword)
-      url: 'acrnonprodinternal.azurecr.io'
-      project: 'automation'
-      image: 'report-server'
-      tag: $(Build.SourceVersion)
+  - task: Bash@3
+    displayName: Build and Push Container to Registry
+    inputs:
+      targetType: inline
+      script: |
+        set -euo pipefail
+        image="acrnonprodinternal.azurecr.io/automation/report-server:$(Build.SourceVersion)"
+        trap 'buildah logout acrnonprodinternal.azurecr.io >/dev/null 2>&1 || true' EXIT
+
+        buildah login \
+          --username "$(ACRNonProdInternalPushUsername)" \
+          --password "$(ACRNonProdInternalPushPassword)" \
+          acrnonprodinternal.azurecr.io
+        buildah build -f report-server.Dockerfile --network host -t "$image" .
+        buildah push "$image"
