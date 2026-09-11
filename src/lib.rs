@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 use tokio::time::{sleep, Duration};
 
 const LOGIN_WAIT_SECS: u16 = 15;
+const PDF_PAGE_RANGES: &str = "1";
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ReportType {
@@ -388,6 +389,7 @@ pub async fn generate_report(
             let pdf = page
                 .pdf(PrintToPdfParams {
                     landscape: Some(true),
+                    page_ranges: Some(PDF_PAGE_RANGES.to_string()),
                     ..Default::default()
                 })
                 .await?;
