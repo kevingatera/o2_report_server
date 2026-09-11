@@ -1,0 +1,30 @@
+trigger:
+  - none
+
+pool:
+  name: 'OnPrem_Self_Hosted_Agent_Pool_Linux_AutomationTeam'
+
+resources:
+  repositories:
+    - repository: templates-repo
+      type: git
+      ref: main
+      name: Automation/k8s_templates
+
+steps:
+  - task: AzureKeyVault@2
+    displayName: Get Secrets from Azure Key Vault
+    inputs:
+      azureSubscription: 'CoO ITS DC6 (bc64219f-98a0-47d8-b44f-b48c44ee5ea4)'
+      KeyVaultName: 'Automation-Prod-DC6'
+      SecretsFilter: 'ACRNonProdInternalPushUsername, ACRNonProdInternalPushPassword'
+      RunAsPreJob: false
+
+  - template: templates/dau-container-registry.yml@templates-repo
+    parameters:
+      username: $(ACRNonProdInternalPushUsername)
+      password: $(ACRNonProdInternalPushPassword)
+      url: 'acrnonprodinternal.azurecr.io'
+      project: 'automation'
+      image: 'report-server'
+      tag: $(Build.SourceVersion)
