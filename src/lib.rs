@@ -30,6 +30,8 @@ use lettre::{
 use serde::{Deserialize, Serialize};
 use tokio::time::{sleep, Duration};
 
+const LOGIN_WAIT_SECS: u16 = 15;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum ReportType {
     PDF,
@@ -188,12 +190,7 @@ pub async fn generate_report(
 
     match page.find_element("input[type='password']").await {
         Ok(elem) => {
-            elem.click()
-                .await?
-                .type_str(user_pass)
-                .await?
-                .press_key("Enter")
-                .await?;
+            elem.click().await?.type_str(user_pass).await?;
         }
         Err(e) => {
             let page_url = page.url().await;
@@ -213,8 +210,12 @@ pub async fn generate_report(
     }
     log::info!("headless: password input filled");
 
-    // Does not seem to work for single page client application
-    page.wait_for_navigation().await?;
+    page.find_element("[data-test='login-sign-in']")
+        .await?
+        .click()
+        .await?;
+    log::info!("headless: sign-in button clicked");
+    wait_for_authentication(&page).await?;
     sleep(Duration::from_secs(5)).await;
 
     let timerange = &dashboard.timerange;
@@ -501,6 +502,24 @@ pub async fn wait_for_panel_data_load(page: &Page) -> Result<Duration, anyhow::E
     }
 }
 
+async fn wait_for_authentication(page: &Page) -> Result<(), anyhow::Error> {
+    for _ in 0..LOGIN_WAIT_SECS {
+        if has_authenticated_url(page.url().await?.as_deref()) {
+            return Ok(());
+        }
+        sleep(Duration::from_secs(1)).await;
+    }
+
+    let page_url = page.url().await?;
+    Err(anyhow::anyhow!(
+        "Sign-in did not complete before dashboard navigation; current url: {page_url:#?}"
+    ))
+}
+
+fn has_authenticated_url(url: Option<&str>) -> bool {
+    matches!(url, Some(url) if !url.is_empty() && !url.contains("/login"))
+}
+
 fn sanitize_filename(filename: &str) -> String {
     filename
         .chars()
@@ -512,4 +531,20 @@ fn sanitize_filename(filename: &str) -> String {
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::has_authenticated_url;
+
+    #[test]
+    fn authentication_requires_leaving_login_page() {
+        assert!(!has_authenticated_url(None));
+        assert!(!has_authenticated_url(Some(
+            "https://openobserve.example/web/login"
+        )));
+        assert!(has_authenticated_url(Some(
+            "https://openobserve.example/web/?org_identifier=chatbot-dev"
+        )));
+    }
 }
