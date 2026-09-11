@@ -5,6 +5,15 @@ pool:
   name: 'OnPrem_Self_Hosted_Agent_Pool_Linux_AutomationTeam'
 
 steps:
+  - task: Bash@3
+    displayName: Clean Buildah Storage
+    inputs:
+      targetType: inline
+      script: |
+        set -euo pipefail
+        buildah rm --all || true
+        buildah rmi --all --force || true
+
   - task: AzureKeyVault@2
     displayName: Get Secrets from Azure Key Vault
     inputs:
