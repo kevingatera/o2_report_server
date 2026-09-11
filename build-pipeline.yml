@@ -13,6 +13,20 @@ steps:
       SecretsFilter: 'ACRNonProdInternalPushUsername, ACRNonProdInternalPushPassword'
       RunAsPreJob: false
 
+  - task: DownloadSecureFile@1
+    displayName: Get City CA Certificate
+    name: caCertificate
+    inputs:
+      secureFile: 'ottawa-ca.crt'
+
+  - task: Bash@3
+    displayName: Add City CA Certificate to Build Context
+    inputs:
+      targetType: inline
+      script: |
+        set -euo pipefail
+        cp "$(caCertificate.secureFilePath)" ottawa-ca.crt
+
   - task: Bash@3
     displayName: Build and Push Container to Registry
     inputs:

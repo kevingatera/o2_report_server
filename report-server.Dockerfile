@@ -11,7 +11,8 @@ RUN rustup target add x86_64-unknown-linux-gnu \
 FROM debian:bookworm-slim
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates chromium \
-    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+COPY ottawa-ca.crt /usr/local/share/ca-certificates/ottawa-ca.crt
+RUN update-ca-certificates
 COPY --from=builder /out/report-generator /report-generator
 CMD ["/report-generator"]
